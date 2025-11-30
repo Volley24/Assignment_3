@@ -59,12 +59,16 @@ struct PCB{
     unsigned int    size;
     unsigned int    arrival_time;
     int             start_time;
-    unsigned int    processing_time;
-    unsigned int    remaining_time;
+    unsigned int    processing_time; // total CPU time
+    unsigned int    remaining_time; // total CPU time remaining
     int             partition_number;
     enum states     state;
-    unsigned int    io_freq;
-    unsigned int    io_duration;
+    unsigned int    io_freq; // at what freq does I/O happen
+    unsigned int    io_duration; // for how long I/O occurs when it does
+
+    /* Extra vars */
+    unsigned int    cpu_remamining_before_io;
+    unsigned int    io_remaining;
 };
 
 //------------------------------------HELPER FUNCTIONS FOR THE SIMULATOR------------------------------
@@ -150,11 +154,12 @@ std::string print_exec_header() {
 
     std::stringstream buffer;
     
-    // Print top border
-    buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
-    
-    // Print headers
-    buffer  << "|"
+        // Print top border
+        buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
+        std::cout << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
+
+        // Print headers
+        buffer  << "|"
             << std::setfill(' ') << std::setw(18) << "Time of Transition"
             << std::setw(2) << "|"
             << std::setfill(' ') << std::setw(3) << "PID"
@@ -163,11 +168,21 @@ std::string print_exec_header() {
             << std::setw(2) << "|"
             << std::setfill(' ') << std::setw(10) << "New State"
             << std::setw(2) << "|" << std::endl;
-    
-    // Print separator
-    buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
+        std::cout  << "|"
+            << std::setfill(' ') << std::setw(18) << "Time of Transition"
+            << std::setw(2) << "|"
+            << std::setfill(' ') << std::setw(3) << "PID"
+            << std::setw(2) << "|"
+            << std::setfill(' ') << std::setw(10) << "Old State"
+            << std::setw(2) << "|"
+            << std::setfill(' ') << std::setw(10) << "New State"
+            << std::setw(2) << "|" << std::endl;
 
-    return buffer.str();
+        // Print separator
+        buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
+        std::cout << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
+
+        return buffer.str();
 
 }
 
@@ -187,6 +202,16 @@ std::string print_exec_status(unsigned int current_time, int PID, states old_sta
             << std::setw(10) << new_state
             << std::setw(2) << "|" << std::endl;
 
+    std::cout << "|"
+            << std::setfill(' ') << std::setw(18) << current_time
+            << std::setw(2) << "|"
+            << std::setw(3) << PID
+            << std::setw(2) << "|"
+            << std::setw(10) << old_state
+            << std::setw(2) << "|"
+            << std::setw(10) << new_state
+            << std::setw(2) << "|" << std::endl;
+
     return buffer.str();
 }
 
@@ -197,10 +222,12 @@ std::string print_exec_footer() {
     // Print bottom border
     buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
 
+    std::cout << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
+
     return buffer.str();
 }
 
-//Synchronize the process in the process queue
+// Synchronize the process in the process queue
 void sync_queue(std::vector<PCB> &process_queue, PCB _process) {
     for(auto &process : process_queue) {
         if(process.PID == _process.PID) {
@@ -209,7 +236,7 @@ void sync_queue(std::vector<PCB> &process_queue, PCB _process) {
     }
 }
 
-//Writes a string to a file
+// Writes a string to a file
 void write_output(std::string execution, const char* filename) {
     std::ofstream output_file(filename);
 
@@ -226,7 +253,7 @@ void write_output(std::string execution, const char* filename) {
 
 //--------------------------------------------FUNCTIONS FOR THE "OS"-------------------------------------
 
-//Assign memory partition to program
+// Assign memory partition to program
 bool assign_memory(PCB &program) {
     int size_to_fit = program.size;
     int available_size = 0;
@@ -244,7 +271,7 @@ bool assign_memory(PCB &program) {
     return false;
 }
 
-//Free a memory partition
+// Free a memory partition
 bool free_memory(PCB &program){
     for(int i = 5; i >= 0; i--) {
         if(program.PID == memory_paritions[i].occupied) {
@@ -256,7 +283,7 @@ bool free_memory(PCB &program){
     return false;
 }
 
-//Convert a list of strings into a PCB
+// Convert a list of strings into a PCB
 PCB add_process(std::vector<std::string> tokens) {
     PCB process;
     process.PID = std::stoi(tokens[0]);
@@ -270,10 +297,13 @@ PCB add_process(std::vector<std::string> tokens) {
     process.partition_number = -1;
     process.state = NOT_ASSIGNED;
 
+    process.cpu_remamining_before_io = process.io_freq;
+    process.io_remaining = 0;
+
     return process;
 }
 
-//Returns true if all processes in the queue have terminated
+// Returns true if all processes in the queue have terminated
 bool all_process_terminated(std::vector<PCB> processes) {
 
     for(auto process : processes) {
@@ -285,7 +315,7 @@ bool all_process_terminated(std::vector<PCB> processes) {
     return true;
 }
 
-//Terminates a given process
+// Terminates a given process
 void terminate_process(PCB &running, std::vector<PCB> &job_queue) {
     running.remaining_time = 0;
     running.state = TERMINATED;
@@ -293,9 +323,16 @@ void terminate_process(PCB &running, std::vector<PCB> &job_queue) {
     sync_queue(job_queue, running);
 }
 
-//set the process in the ready queue to runnning
+// Set the process in the ready queue to running
 void run_process(PCB &running, std::vector<PCB> &job_queue, std::vector<PCB> &ready_queue, unsigned int current_time) {
-    running = ready_queue.back();
+    // NOTE: THIS WAS CHANGED FROM READY_QUEUE.back() to READY_QUEUE.front()
+    // To help with better queue managment.
+    // For example, in RR: push_back() process,
+    // A, B, C (A runs first, then B, then C)
+    // process that gets to run should be 'A' (i.e: queue.front(), not queue.back())
+
+    // As such, the algorithm for EP will appear 'inverted' from the template.
+    running = ready_queue.front();
     ready_queue.pop_back();
     running.start_time = current_time;
     running.state = RUNNING;

@@ -5,7 +5,7 @@
  * 
  */
 
-#include<interrupts_student1_student2.hpp>
+#include <interrupts_student1_student2.hpp>
 
 void FCFS(std::vector<PCB> &ready_queue) {
     std::sort( 
@@ -16,6 +16,21 @@ void FCFS(std::vector<PCB> &ready_queue) {
                 } 
             );
 }
+
+void EP(std::vector<PCB> &ready_queue) {
+    std::sort( 
+                ready_queue.begin(),
+                ready_queue.end(),
+                []( const PCB &first, const PCB &second ){
+                    return (first.PID > second.PID); 
+                } 
+            );
+}
+
+/*
+ Algorithm to implement: External Priorities without preemption.
+
+*/
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
 
@@ -37,10 +52,14 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
     //make the output table (the header row)
     execution_status = print_exec_header();
 
+    unsigned int r = 5;
+    unsigned int r_remaining = r;
+
+    int max_iters = 100;
+
     //Loop while till there are no ready or waiting processes.
     //This is the main reason I have job_list, you don't have to use it.
-    while(!all_process_terminated(job_list) || job_list.empty()) {
-
+    while((!all_process_terminated(job_list) || job_list.empty()) && max_iters > 0) {
         //Inside this loop, there are three things you must do:
         // 1) Populate the ready queue with processes as they arrive
         // 2) Manage the wait queue
@@ -64,16 +83,109 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         ///////////////////////MANAGE WAIT QUEUE/////////////////////////
         //This mainly involves keeping track of how long a process must remain in the ready queue
 
+        // WAITING -> READY
+        for (auto &process : wait_queue) {
+            // NEW FROM EP: cpu_remamining_before_io might not be 0 while a process is in the WAITING queue,
+            // Because it might have been kicked out before it's time to do I/O
+            // i,e: Process A runs I/O every 5ms, but RR kicked it out at 4ms.
+            // process A still needs to wait, but CANNOT DO I/O
+            // next time it runs, after 1ms, it will go back into waiting queue and do I/O.
+            if (process.state == WAITING && process.cpu_remamining_before_io == 0) {
+                process.io_remaining --;
+
+                if (process.io_remaining == 0) {
+                    // Put the waiting process back into the ready queue, as it finished I/O.
+                    process.state = READY;  
+                    ready_queue.push_back(process); 
+
+                    execution_status += print_exec_status(current_time, process.PID, WAITING, READY);
+                }
+            }
+        }
+
+        bool should_run_new_process = false;
+
+        if (running.state == RUNNING) {
+
+            r_remaining --; // rr time remaining left
+            running.remaining_time --; // global remaining time left 
+            running.cpu_remamining_before_io --; // not used if io_duration == 0
+
+            if (running.remaining_time == 0) {
+                // RUNNING -> TERMINATED
+                terminate_process(running, job_list);
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, TERMINATED);
+
+                should_run_new_process = true; // a process terminated, so we need to run one
+            }else if (running.io_duration != 0 && running.cpu_remamining_before_io == 0) {
+                // RUNNING -> WAITING
+                running.state = WAITING;
+                running.io_remaining = running.io_duration; // update corresponding i/o remaining with i/o duration
+                running.cpu_remamining_before_io = running.io_freq;
+
+                wait_queue.push_back(running);
+
+                // RUNNING -> WAITING
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+
+                should_run_new_process = true; // a process is waiting, so we need to run one
+            } else if (r_remaining == 0) {
+                // RUNNING -> SUSPENDED
+
+                // Now this is interesting. If our R > io_freq, technically there's a chance our processes has nothing to do.
+
+                // So we put the i/o stuff first. bc if R is UP, but we need to do i/o work, it's fine to put process from WAITING -> WAITING.
+
+                // If not though, process can't do I/O yet since cpu_remamining_before_io != 0.
+                // So, we're forced to KICK IT OUT early, which is the preemptive part
+
+                // RUNNING -> WAITING.
+                // goes back into waiting queue.
+
+                std::cout << "P" << running.PID << " was kicked out" << std::endl;
+
+                running.state = WAITING;
+                wait_queue.push_back(running);
+
+                // RUNNING -> WAITING
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+
+                should_run_new_process = true; // a process is waiting, so we need to run one
+            } 
+        }else {
+            // Initiallly, no processes are running, so we need to run one 
+            should_run_new_process = true;
+        }
+
+        
+
         /////////////////////////////////////////////////////////////////
 
         //////////////////////////SCHEDULER//////////////////////////////
-        FCFS(ready_queue); //example of FCFS is shown here
+
+        // READY -> RUNNING
+        if (should_run_new_process && !ready_queue.empty()) {
+            // trigger algo to select new process from rdy queue to run while this one is waiting.
+            // EP(ready_queue);
+
+            r_remaining = r; // reset RR counter.
+            run_process(running, job_list, ready_queue, current_time);
+
+
+            
+
+            execution_status += print_exec_status(current_time, running.PID, READY, RUNNING);
+        }        
         /////////////////////////////////////////////////////////////////
 
+        current_time ++;
+        max_iters --;
     }
     
     //Close the output table
     execution_status += print_exec_footer();
+
+    std::cout << "Using RR with R = " << r << "ms" << std::endl;
 
     return std::make_tuple(execution_status);
 }

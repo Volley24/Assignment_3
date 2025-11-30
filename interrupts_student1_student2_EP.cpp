@@ -5,7 +5,7 @@
  * 
  */
 
-#include<interrupts_student1_student2.hpp>
+#include <interrupts_student1_student2.hpp>
 
 void FCFS(std::vector<PCB> &ready_queue) {
     std::sort( 
@@ -16,6 +16,23 @@ void FCFS(std::vector<PCB> &ready_queue) {
                 } 
             );
 }
+
+void EP(std::vector<PCB> &ready_queue) {
+    std::sort( 
+                ready_queue.begin(),
+                ready_queue.end(),
+                []( const PCB &first, const PCB &second ){
+                    // Note: This is NOT inverted. In the .hpp file, for ease-of-usage
+                    // ready_queue.back() was changed to ready_queue.front()
+                    return (first.PID < second.PID); 
+                } 
+            );
+}
+
+/*
+ Algorithm to implement: External Priorities without preemption.
+
+*/
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
 
@@ -64,12 +81,68 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         ///////////////////////MANAGE WAIT QUEUE/////////////////////////
         //This mainly involves keeping track of how long a process must remain in the ready queue
 
+        // WAITING -> READY
+        for (auto &process : wait_queue) {
+            if (process.state == WAITING) {
+                process.io_remaining --;
+
+                if (process.io_remaining == 0) {
+                    // Put the waiting process back into the ready queue, as it finished I/O.
+                    process.state = READY;  
+                    ready_queue.push_back(process); 
+
+                    execution_status += print_exec_status(current_time, process.PID, WAITING, READY);
+                }
+            }
+        }
+
+        bool should_run_new_process = false;
+
+        if (running.state == RUNNING) {
+
+            running.remaining_time --; // global remaining time left 
+            running.cpu_remamining_before_io --; // not used if io_duration == 0
+
+            if (running.remaining_time == 0) {
+                // RUNNING -> TERMINATED
+                terminate_process(running, job_list);
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, TERMINATED);
+
+                should_run_new_process = true; // a process terminated, so we need to run one
+            } else if (running.io_duration != 0 && running.cpu_remamining_before_io == 0) {
+                // WAITING -> READY
+                running.state = WAITING;
+                running.io_remaining = running.io_duration; // update corresponding i/o remaining with i/o duration
+                running.cpu_remamining_before_io = running.io_freq;
+
+                wait_queue.push_back(running);
+
+                // RUNNING -> WAITING
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+
+                should_run_new_process = true; // a process is waiting, so we need to run one
+            }
+        }else {
+            // Initiallly, no processes are running, so we need to run one 
+            should_run_new_process = true;
+        }
+
+
         /////////////////////////////////////////////////////////////////
 
         //////////////////////////SCHEDULER//////////////////////////////
-        FCFS(ready_queue); //example of FCFS is shown here
+
+        // READY -> RUNNING
+        if (should_run_new_process && !ready_queue.empty()) {
+            // trigger algo to select new process from rdy queue to run while this one is waiting.
+            EP(ready_queue);
+            run_process(running, job_list, ready_queue, current_time);
+
+            execution_status += print_exec_status(current_time, running.PID, READY, RUNNING);
+        }        
         /////////////////////////////////////////////////////////////////
 
+        current_time ++;
     }
     
     //Close the output table
