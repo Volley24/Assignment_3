@@ -7,25 +7,28 @@
 
 #include <interrupts_student1_student2.hpp>
 
-void FCFS(std::vector<PCB> &ready_queue) {
-    std::sort( 
-                ready_queue.begin(),
-                ready_queue.end(),
-                []( const PCB &first, const PCB &second ){
-                    return (first.arrival_time > second.arrival_time); 
-                } 
-            );
-}
+using namespace std;
 
-void EP(std::vector<PCB> &ready_queue) {
-    std::sort( 
-                ready_queue.begin(),
-                ready_queue.end(),
-                []( const PCB &first, const PCB &second ){
-                    return (first.PID > second.PID); 
-                } 
-            );
-}
+// not needed
+// void FCFS(std::vector<PCB> &ready_queue) {
+//     std::sort( 
+//                 ready_queue.begin(),
+//                 ready_queue.end(),
+//                 []( const PCB &first, const PCB &second ){
+//                     return (first.arrival_time > second.arrival_time); 
+//                 } 
+//             );
+// }
+
+// void EP(std::vector<PCB> &ready_queue) {
+//     std::sort( 
+//                 ready_queue.begin(),
+//                 ready_queue.end(),
+//                 []( const PCB &first, const PCB &second ){
+//                     return (first.PID > second.PID); 
+//                 } 
+//             );
+// }
 
 /*
  Algorithm to implement: External Priorities without preemption.
@@ -55,7 +58,9 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
     unsigned int r = 5;
     unsigned int r_remaining = r;
 
-    int max_iters = 100;
+    // so we don't run into an infinite loop.
+    // this is temporary
+    int max_iters = 150;
 
     //Loop while till there are no ready or waiting processes.
     //This is the main reason I have job_list, you don't have to use it.
@@ -68,9 +73,14 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         //Population of ready queue is given to you as an example.
         //Go through the list of proceeses
         for(auto &process : list_processes) {
-            if(process.arrival_time == current_time) {//check if the AT = current time
+
+            if(process.state == NOT_ASSIGNED && current_time >= process.arrival_time) {
                 //if so, assign memory and put the process into the ready queue
-                assign_memory(process);
+                bool success = assign_memory(process);
+
+                if (!success) {
+                    continue; // ERROR: No memory for new process! Process must stay in NEW state.
+                }
 
                 process.state = READY;  //Set the process state to READY
                 ready_queue.push_back(process); //Add the process to the ready queue
@@ -90,13 +100,14 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             // i,e: Process A runs I/O every 5ms, but RR kicked it out at 4ms.
             // process A still needs to wait, but CANNOT DO I/O
             // next time it runs, after 1ms, it will go back into waiting queue and do I/O.
-            if (process.state == WAITING && process.cpu_remamining_before_io == 0) {
+            if (process.state == WAITING) {
                 process.io_remaining --;
 
                 if (process.io_remaining == 0) {
                     // Put the waiting process back into the ready queue, as it finished I/O.
                     process.state = READY;  
                     ready_queue.push_back(process); 
+                    sync_queue(job_list, process);
 
                     execution_status += print_exec_status(current_time, process.PID, WAITING, READY);
                 }
@@ -124,31 +135,34 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                 running.cpu_remamining_before_io = running.io_freq;
 
                 wait_queue.push_back(running);
+                sync_queue(job_list, running);
+
+                cout << "P" << running.PID << ": is now waiting for I/O to complete. i/o remaining = " << running.io_duration << endl;
 
                 // RUNNING -> WAITING
                 execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
 
                 should_run_new_process = true; // a process is waiting, so we need to run one
             } else if (r_remaining == 0) {
-                // RUNNING -> SUSPENDED
+                // RUNNING -> READY.
 
-                // Now this is interesting. If our R > io_freq, technically there's a chance our processes has nothing to do.
+                std::cout << "P" << running.PID << " was kicked out from RR timer." << std::endl;
 
-                // So we put the i/o stuff first. bc if R is UP, but we need to do i/o work, it's fine to put process from WAITING -> WAITING.
+                running.state = READY;
 
-                // If not though, process can't do I/O yet since cpu_remamining_before_io != 0.
-                // So, we're forced to KICK IT OUT early, which is the preemptive part
+                // If the current ran process doesn't have any I/O
+                // Push it to the back of the queue instantly.
+                // Else, we'll have to push it back after it's done WAITING for I/O to complete.
+               
+                std::cout << "P" << running.PID << " doesn't have any I/O, push back to queue instantly" << endl;
+                ready_queue.push_back(running); 
 
-                // RUNNING -> WAITING.
-                // goes back into waiting queue.
+                sync_queue(job_list, running);
 
-                std::cout << "P" << running.PID << " was kicked out" << std::endl;
+                // RUNNING -> READY
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, READY);
 
-                running.state = WAITING;
-                wait_queue.push_back(running);
-
-                // RUNNING -> WAITING
-                execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+                // No waiting needed here.
 
                 should_run_new_process = true; // a process is waiting, so we need to run one
             } 
@@ -165,14 +179,9 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
         // READY -> RUNNING
         if (should_run_new_process && !ready_queue.empty()) {
-            // trigger algo to select new process from rdy queue to run while this one is waiting.
-            // EP(ready_queue);
-
+            
             r_remaining = r; // reset RR counter.
             run_process(running, job_list, ready_queue, current_time);
-
-
-            
 
             execution_status += print_exec_status(current_time, running.PID, READY, RUNNING);
         }        
@@ -191,13 +200,24 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 }
 
 
+
 int main(int argc, char** argv) {
+    // Note: This was modified to be able to spesify an output file too.
+    // This make the generation / verification much easier.
 
     //Get the input file from the user
-    if(argc != 2) {
+    if(argc < 2) {
         std::cout << "ERROR!\nExpected 1 argument, received " << argc - 1 << std::endl;
         std::cout << "To run the program, do: ./interrutps <your_input_file.txt>" << std::endl;
         return -1;
+    }
+
+    // Default output file name.
+    // So that there are no breaking changes.
+    auto output_file_name = "execution.txt";
+
+    if (argc == 3) {
+        output_file_name = argv[2];
     }
 
     //Open the input file
@@ -225,7 +245,8 @@ int main(int argc, char** argv) {
     //With the list of processes, run the simulation
     auto [exec] = run_simulation(list_process);
 
-    write_output(exec, "execution.txt");
+    // Write to the OUTPUT file
+    write_output(exec, output_file_name);
 
     return 0;
 }

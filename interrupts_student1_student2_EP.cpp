@@ -7,16 +7,6 @@
 
 #include <interrupts_student1_student2.hpp>
 
-void FCFS(std::vector<PCB> &ready_queue) {
-    std::sort( 
-                ready_queue.begin(),
-                ready_queue.end(),
-                []( const PCB &first, const PCB &second ){
-                    return (first.arrival_time > second.arrival_time); 
-                } 
-            );
-}
-
 void EP(std::vector<PCB> &ready_queue) {
     std::sort( 
                 ready_queue.begin(),
@@ -57,7 +47,6 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
     //Loop while till there are no ready or waiting processes.
     //This is the main reason I have job_list, you don't have to use it.
     while(!all_process_terminated(job_list) || job_list.empty()) {
-
         //Inside this loop, there are three things you must do:
         // 1) Populate the ready queue with processes as they arrive
         // 2) Manage the wait queue
@@ -153,12 +142,22 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
 
 int main(int argc, char** argv) {
+    // Note: This was modified to be able to spesify an output file too.
+    // This make the generation / verification much easier.
 
     //Get the input file from the user
-    if(argc != 2) {
+    if(argc < 2) {
         std::cout << "ERROR!\nExpected 1 argument, received " << argc - 1 << std::endl;
         std::cout << "To run the program, do: ./interrutps <your_input_file.txt>" << std::endl;
         return -1;
+    }
+
+    // Default output file name.
+    // So that there are no breaking changes.
+    auto output_file_name = "execution.txt";
+
+    if (argc == 3) {
+        output_file_name = argv[2];
     }
 
     //Open the input file
@@ -186,7 +185,8 @@ int main(int argc, char** argv) {
     //With the list of processes, run the simulation
     auto [exec] = run_simulation(list_process);
 
-    write_output(exec, "execution.txt");
+    // Write to the OUTPUT file
+    write_output(exec, output_file_name);
 
     return 0;
 }

@@ -1,1 +1,0 @@
-./build.sh && ./bin/interrupts_EP input.txt

@@ -19,6 +19,8 @@
 #include<iomanip>
 #include<algorithm>
 
+using namespace std;
+
 //An enumeration of states to make assignment easier
 enum states {
     NEW,
@@ -66,7 +68,7 @@ struct PCB{
     unsigned int    io_freq; // at what freq does I/O happen
     unsigned int    io_duration; // for how long I/O occurs when it does
 
-    /* Extra vars */
+    /* Extra vars todo: explain this*/
     unsigned int    cpu_remamining_before_io;
     unsigned int    io_remaining;
 };
@@ -168,19 +170,9 @@ std::string print_exec_header() {
             << std::setw(2) << "|"
             << std::setfill(' ') << std::setw(10) << "New State"
             << std::setw(2) << "|" << std::endl;
-        std::cout  << "|"
-            << std::setfill(' ') << std::setw(18) << "Time of Transition"
-            << std::setw(2) << "|"
-            << std::setfill(' ') << std::setw(3) << "PID"
-            << std::setw(2) << "|"
-            << std::setfill(' ') << std::setw(10) << "Old State"
-            << std::setw(2) << "|"
-            << std::setfill(' ') << std::setw(10) << "New State"
-            << std::setw(2) << "|" << std::endl;
 
         // Print separator
         buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
-        std::cout << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
 
         return buffer.str();
 
@@ -202,15 +194,7 @@ std::string print_exec_status(unsigned int current_time, int PID, states old_sta
             << std::setw(10) << new_state
             << std::setw(2) << "|" << std::endl;
 
-    std::cout << "|"
-            << std::setfill(' ') << std::setw(18) << current_time
-            << std::setw(2) << "|"
-            << std::setw(3) << PID
-            << std::setw(2) << "|"
-            << std::setw(10) << old_state
-            << std::setw(2) << "|"
-            << std::setw(10) << new_state
-            << std::setw(2) << "|" << std::endl;
+    std::cout << "P" << PID << ": " << old_state << " -> " << new_state << endl;
 
     return buffer.str();
 }
@@ -221,8 +205,6 @@ std::string print_exec_footer() {
 
     // Print bottom border
     buffer << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
-
-    std::cout << "+" << std::setfill('-') << std::setw(tableWidth) << "+" << std::endl;
 
     return buffer.str();
 }
@@ -248,7 +230,7 @@ void write_output(std::string execution, const char* filename) {
         std::cerr << "Error opening file!" << std::endl;
     }
 
-    std::cout << "Output generated in " << filename << ".txt" << std::endl;
+    std::cout << "Output generated in " << filename << std::endl;
 }
 
 //--------------------------------------------FUNCTIONS FOR THE "OS"-------------------------------------
@@ -325,6 +307,7 @@ void terminate_process(PCB &running, std::vector<PCB> &job_queue) {
 
 // Set the process in the ready queue to running
 void run_process(PCB &running, std::vector<PCB> &job_queue, std::vector<PCB> &ready_queue, unsigned int current_time) {
+    // todo: refactor this comment.
     // NOTE: THIS WAS CHANGED FROM READY_QUEUE.back() to READY_QUEUE.front()
     // To help with better queue managment.
     // For example, in RR: push_back() process,
@@ -333,7 +316,8 @@ void run_process(PCB &running, std::vector<PCB> &job_queue, std::vector<PCB> &re
 
     // As such, the algorithm for EP will appear 'inverted' from the template.
     running = ready_queue.front();
-    ready_queue.pop_back();
+    // std::vector has no pop_front(); remove the first element via erase
+    ready_queue.erase(ready_queue.begin());
     running.start_time = current_time;
     running.state = RUNNING;
     sync_queue(job_queue, running);
