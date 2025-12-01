@@ -5,34 +5,12 @@
  * 
  */
 
-#include <interrupts_student1_student2.hpp>
+#include <interrupts_101305254_101298069.hpp>
 
 using namespace std;
 
-// not needed
-// void FCFS(std::vector<PCB> &ready_queue) {
-//     std::sort( 
-//                 ready_queue.begin(),
-//                 ready_queue.end(),
-//                 []( const PCB &first, const PCB &second ){
-//                     return (first.arrival_time > second.arrival_time); 
-//                 } 
-//             );
-// }
-
-// void EP(std::vector<PCB> &ready_queue) {
-//     std::sort( 
-//                 ready_queue.begin(),
-//                 ready_queue.end(),
-//                 []( const PCB &first, const PCB &second ){
-//                     return (first.PID > second.PID); 
-//                 } 
-//             );
-// }
-
 /*
- Algorithm to implement: External Priorities without preemption.
-
+ Algorithm to implement: Round-Robin with an R = 100ms.
 */
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
@@ -55,7 +33,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
     //make the output table (the header row)
     execution_status = print_exec_header();
 
-    unsigned int r = 5;
+    unsigned int r = 5; // As a test, R = 5 is used.
     unsigned int r_remaining = r;
 
     // so we don't run into an infinite loop.
@@ -70,10 +48,11 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         // 2) Manage the wait queue
         // 3) Schedule processes from the ready queue
 
-        //Population of ready queue is given to you as an example.
-        //Go through the list of proceeses
+        // The template for the population of the ready was slightly modified.
+        // i) A process may not be able to be assigned memory, as partitions have been allocated in such a way that said process cannot be allocated.
+        // ii) As a result of this, a process may be put into the READY queue AFTER it's intended arrival time. The IF statement was changed to allow this.
         for(auto &process : list_processes) {
-
+            
             if(process.state == NOT_ASSIGNED && current_time >= process.arrival_time) {
                 //if so, assign memory and put the process into the ready queue
                 bool success = assign_memory(process);
@@ -82,9 +61,9 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                     continue; // ERROR: No memory for new process! Process must stay in NEW state.
                 }
 
-                process.state = READY;  //Set the process state to READY
-                ready_queue.push_back(process); //Add the process to the ready queue
-                job_list.push_back(process); //Add it to the list of processes
+                process.state = READY;  // Set the process state to READY
+                ready_queue.push_back(process); // Add the process to the ready queue
+                job_list.push_back(process); // Add it to the list of processes
 
                 execution_status += print_exec_status(current_time, process.PID, NEW, READY);
             }
@@ -93,18 +72,15 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         ///////////////////////MANAGE WAIT QUEUE/////////////////////////
         //This mainly involves keeping track of how long a process must remain in the ready queue
 
-        // WAITING -> READY
+        // WAITING -> READY process
+        // This process involves decrementing I/O remaining ticks for each process in the WAITING queue.
+        // Whenever said process is finished I/O, it is re-added to the READY queue.
         for (auto &process : wait_queue) {
-            // NEW FROM EP: cpu_remamining_before_io might not be 0 while a process is in the WAITING queue,
-            // Because it might have been kicked out before it's time to do I/O
-            // i,e: Process A runs I/O every 5ms, but RR kicked it out at 4ms.
-            // process A still needs to wait, but CANNOT DO I/O
-            // next time it runs, after 1ms, it will go back into waiting queue and do I/O.
             if (process.state == WAITING) {
                 process.io_remaining --;
 
                 if (process.io_remaining == 0) {
-                    // Put the waiting process back into the ready queue, as it finished I/O.
+                    // Put the waiting process back into the ready queue, as it has finished I/O.
                     process.state = READY;  
                     ready_queue.push_back(process); 
                     sync_queue(job_list, process);
@@ -118,18 +94,22 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
         if (running.state == RUNNING) {
 
-            r_remaining --; // rr time remaining left
-            running.remaining_time --; // global remaining time left 
-            running.cpu_remamining_before_io --; // not used if io_duration == 0
+            r_remaining --; // RR time remaining left
+            running.remaining_time --; // Global remaining time left 
+            running.cpu_remamining_before_io --; // Not used if io_duration == 0
 
             if (running.remaining_time == 0) {
                 // RUNNING -> TERMINATED
+                // If a process doesn't have any remaining time left, TERMINATE it.
+
                 terminate_process(running, job_list);
                 execution_status += print_exec_status(current_time, running.PID, RUNNING, TERMINATED);
 
                 should_run_new_process = true; // a process terminated, so we need to run one
             }else if (running.io_duration != 0 && running.cpu_remamining_before_io == 0) {
                 // RUNNING -> WAITING
+                // If a process has reached a point where it needs to execute I/O, move it to the WAIT queue.
+
                 running.state = WAITING;
                 running.io_remaining = running.io_duration; // update corresponding i/o remaining with i/o duration
                 running.cpu_remamining_before_io = running.io_freq;
@@ -144,25 +124,19 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
                 should_run_new_process = true; // a process is waiting, so we need to run one
             } else if (r_remaining == 0) {
-                // RUNNING -> READY.
-
-                std::cout << "P" << running.PID << " was kicked out from RR timer." << std::endl;
+                // RUNNING -> READY
+                // If the RR time quantum has been reached, the process running must be kicked out. 
+                // It will be moved to ready, as it had been interrupted in the middle of an I/O sequence.
+                // As the RUNNING -> WAITING queue ELSE-IF is above this one, if a process runs out of R time AND needs to do I/O at the same time,
+                // Obviously the I/O takes priority.
 
                 running.state = READY;
-
-                // If the current ran process doesn't have any I/O
-                // Push it to the back of the queue instantly.
-                // Else, we'll have to push it back after it's done WAITING for I/O to complete.
-               
-                std::cout << "P" << running.PID << " doesn't have any I/O, push back to queue instantly" << endl;
                 ready_queue.push_back(running); 
-
                 sync_queue(job_list, running);
 
                 // RUNNING -> READY
                 execution_status += print_exec_status(current_time, running.PID, RUNNING, READY);
 
-                // No waiting needed here.
 
                 should_run_new_process = true; // a process is waiting, so we need to run one
             } 
@@ -171,7 +145,6 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             should_run_new_process = true;
         }
 
-        
 
         /////////////////////////////////////////////////////////////////
 
@@ -180,7 +153,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         // READY -> RUNNING
         if (should_run_new_process && !ready_queue.empty()) {
             
-            r_remaining = r; // reset RR counter.
+            r_remaining = r; // Reset the RR counter for the next process to run
             run_process(running, job_list, ready_queue, current_time);
 
             execution_status += print_exec_status(current_time, running.PID, READY, RUNNING);
