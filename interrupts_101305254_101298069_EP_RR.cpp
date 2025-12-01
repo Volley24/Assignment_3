@@ -74,13 +74,10 @@ std::tuple<std::string, std::string> run_simulation(std::vector<PCB> list_proces
     unsigned int r = 5; // As a test, R = 5 is used.
     unsigned int r_remaining = r;
 
-    // so we don't run into an infinite loop.
-    // this is temporary
-    int max_iters = 150;
 
     //Loop while till there are no ready or waiting processes.
     //This is the main reason I have job_list, you don't have to use it.
-    while((!all_process_terminated(job_list) || job_list.empty()) && max_iters > 0) {
+    while((!all_process_terminated(job_list) || job_list.empty()) && current_time < 1000) {
         //Inside this loop, there are three things you must do:
         // 1) Populate the ready queue with processes as they arrive
         // 2) Manage the wait queue
@@ -108,6 +105,9 @@ std::tuple<std::string, std::string> run_simulation(std::vector<PCB> list_proces
                 job_list.push_back(process); // Add it to the list of processes
 
                 execution_status += print_exec_status(current_time, process.PID, NEW, READY);
+
+                // Append memory snapshot on allocation
+                memory_output += record_memory_usage(job_list);
 
                 // [NEW FOR EP_RR]: It's possible here that a newly added process has a higher priority then the currently running one.
                 // In that case, the currently running process should immediately STOP, pushed to the back of the ready_queue
@@ -247,7 +247,6 @@ std::tuple<std::string, std::string> run_simulation(std::vector<PCB> list_proces
         /////////////////////////////////////////////////////////////////
 
         current_time ++;
-        max_iters --;
         temp_processes_indices_exiting_waiting_queue.clear();
     }
     

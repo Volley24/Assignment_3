@@ -1,0 +1,55 @@
++------------------------------------------------+
+|Time of Transition |PID | Old State | New State |
++------------------------------------------------+
+|                 0 |  1 |       NEW |     READY |
+|                 0 |  1 |     READY |   RUNNING |
+|                 2 |  2 |       NEW |     READY |
+|                 4 |  3 |       NEW |     READY |
+|                 5 |  1 |   RUNNING |     READY |
+|                 5 |  2 |     READY |   RUNNING |
+|                 6 |  4 |       NEW |     READY |
+|                 8 |  5 |       NEW |     READY |
+|                10 |  2 |   RUNNING |     READY |
+|                10 |  3 |     READY |   RUNNING |
+|                15 |  3 |   RUNNING |     READY |
+|                15 |  1 |     READY |   RUNNING |
+|                20 |  1 |   RUNNING |     READY |
+|                20 |  4 |     READY |   RUNNING |
+|                25 |  4 |   RUNNING |     READY |
+|                25 |  5 |     READY |   RUNNING |
+|                30 |  5 |   RUNNING |     READY |
+|                30 |  2 |     READY |   RUNNING |
+|                35 |  2 |   RUNNING |     READY |
+|                35 |  3 |     READY |   RUNNING |
+|                40 |  3 |   RUNNING |     READY |
+|                40 |  1 |     READY |   RUNNING |
+|                45 |  1 |   RUNNING |     READY |
+|                45 |  4 |     READY |   RUNNING |
+|                50 |  4 |   RUNNING |     READY |
+|                50 |  5 |     READY |   RUNNING |
+|                55 |  5 |   RUNNING |     READY |
+|                55 |  2 |     READY |   RUNNING |
+|                60 |  2 |   RUNNING |     READY |
+|                60 |  3 |     READY |   RUNNING |
+|                65 |  3 |   RUNNING |     READY |
+|                65 |  1 |     READY |   RUNNING |
+|                70 |  1 |   RUNNING |TERMINATED |
+|                70 |  4 |     READY |   RUNNING |
+|                75 |  4 |   RUNNING |     READY |
+|                75 |  5 |     READY |   RUNNING |
+|                80 |  5 |   RUNNING |     READY |
+|                80 |  2 |     READY |   RUNNING |
+|                85 |  2 |   RUNNING |TERMINATED |
+|                85 |  3 |     READY |   RUNNING |
+|                90 |  3 |   RUNNING |TERMINATED |
+|                90 |  4 |     READY |   RUNNING |
+|                95 |  4 |   RUNNING |TERMINATED |
+|                95 |  5 |     READY |   RUNNING |
+|               100 |  5 |   RUNNING |TERMINATED |
++------------------------------------------------+
+
+=== Simulation Metrics ===
+Throughput (processes per ms): 0.05
+Average Turnaround Time: 84 ms
+Average Wait Time: 8 ms
+Average Response Time (arrival -> first run): 8 ms

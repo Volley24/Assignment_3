@@ -1,0 +1,72 @@
+Partition 1: FREE (40MB)
+Partition 2: OCCUPIED by process PID 1 (size = 25MB, used = 25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 25MB
+TOTAL FREE MEMORY AVAILABLE = 75MB
+USABLE MEMORY AVAILBLE = 75MB
+
+Partition 1: OCCUPIED by process PID 2 (size = 40MB, used = 25MB)
+Partition 2: OCCUPIED by process PID 1 (size = 25MB, used = 25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 65MB
+TOTAL FREE MEMORY AVAILABLE = 50MB
+USABLE MEMORY AVAILBLE = 35MB
+
+Partition 1: OCCUPIED by process PID 2 (size = 40MB, used = 25MB)
+Partition 2: OCCUPIED by process PID 3 (size = 25MB, used = 25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 65MB
+TOTAL FREE MEMORY AVAILABLE = 50MB
+USABLE MEMORY AVAILBLE = 35MB
+
+Partition 1: OCCUPIED by process PID 4 (size = 40MB, used = 25MB)
+Partition 2: OCCUPIED by process PID 3 (size = 25MB, used = 25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 65MB
+TOTAL FREE MEMORY AVAILABLE = 50MB
+USABLE MEMORY AVAILBLE = 35MB
+
+Partition 1: OCCUPIED by process PID 4 (size = 40MB, used = 25MB)
+Partition 2: OCCUPIED by process PID 5 (size = 25MB, used = 25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 65MB
+TOTAL FREE MEMORY AVAILABLE = 50MB
+USABLE MEMORY AVAILBLE = 35MB
+
+Partition 1: FREE (40MB)
+Partition 2: FREE (25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 0MB
+TOTAL FREE MEMORY AVAILABLE = 100MB
+USABLE MEMORY AVAILBLE = 100MB
+

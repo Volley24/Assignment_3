@@ -1,0 +1,72 @@
+Partition 1: FREE (40MB)
+Partition 2: FREE (25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: OCCUPIED by process PID 1 (size = 8MB, used = 8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 8MB
+TOTAL FREE MEMORY AVAILABLE = 92MB
+USABLE MEMORY AVAILBLE = 92MB
+
+Partition 1: FREE (40MB)
+Partition 2: FREE (25MB)
+Partition 3: FREE (15MB)
+Partition 4: OCCUPIED by process PID 2 (size = 10MB, used = 8MB)
+Partition 5: OCCUPIED by process PID 1 (size = 8MB, used = 8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 18MB
+TOTAL FREE MEMORY AVAILABLE = 84MB
+USABLE MEMORY AVAILBLE = 82MB
+
+Partition 1: FREE (40MB)
+Partition 2: FREE (25MB)
+Partition 3: OCCUPIED by process PID 3 (size = 15MB, used = 8MB)
+Partition 4: OCCUPIED by process PID 2 (size = 10MB, used = 8MB)
+Partition 5: OCCUPIED by process PID 1 (size = 8MB, used = 8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 33MB
+TOTAL FREE MEMORY AVAILABLE = 76MB
+USABLE MEMORY AVAILBLE = 67MB
+
+Partition 1: FREE (40MB)
+Partition 2: OCCUPIED by process PID 4 (size = 25MB, used = 8MB)
+Partition 3: OCCUPIED by process PID 3 (size = 15MB, used = 8MB)
+Partition 4: OCCUPIED by process PID 2 (size = 10MB, used = 8MB)
+Partition 5: OCCUPIED by process PID 1 (size = 8MB, used = 8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 58MB
+TOTAL FREE MEMORY AVAILABLE = 68MB
+USABLE MEMORY AVAILBLE = 42MB
+
+Partition 1: OCCUPIED by process PID 5 (size = 40MB, used = 8MB)
+Partition 2: OCCUPIED by process PID 4 (size = 25MB, used = 8MB)
+Partition 3: OCCUPIED by process PID 3 (size = 15MB, used = 8MB)
+Partition 4: OCCUPIED by process PID 2 (size = 10MB, used = 8MB)
+Partition 5: OCCUPIED by process PID 1 (size = 8MB, used = 8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 98MB
+TOTAL FREE MEMORY AVAILABLE = 60MB
+USABLE MEMORY AVAILBLE = 2MB
+
+Partition 1: FREE (40MB)
+Partition 2: FREE (25MB)
+Partition 3: FREE (15MB)
+Partition 4: FREE (10MB)
+Partition 5: FREE (8MB)
+Partition 6: FREE (2MB)
+
+=============================
+TOTAL MEMORY USED = 0MB
+TOTAL FREE MEMORY AVAILABLE = 100MB
+USABLE MEMORY AVAILBLE = 100MB
+
