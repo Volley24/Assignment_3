@@ -23,6 +23,8 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                                     //see in questions. You don't need to use it, I put it here
                                     //to make the code easier :).
 
+    std::vector<int> temp_processes_indices_exiting_waiting_queue;   // Temporary queue to keep track of processes (their indices) leaving the waiting queue
+
     unsigned int current_time = 0;
     PCB running;
 
@@ -76,7 +78,8 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         // WAITING -> READY process
         // This process involves decrementing I/O remaining ticks for each process in the WAITING queue.
         // Whenever said process is finished I/O, it is re-added to the READY queue.
-        for (auto &process : wait_queue) {
+        for (int i = 0; i < wait_queue.size(); i++) {
+            auto &process = wait_queue[i];
             if (process.state == WAITING) {
                 process.io_remaining --;
 
@@ -86,9 +89,20 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                     ready_queue.push_back(process); 
                     sync_queue(job_list, process);
 
+                    temp_processes_indices_exiting_waiting_queue.push_back(i);
                     execution_status += print_exec_status(current_time, process.PID, WAITING, READY);
                 }
             }
+        }
+
+        for (int i = 0; i < temp_processes_indices_exiting_waiting_queue.size(); i ++) {
+            // We need this so that indices don't get broken when we start erasing.
+            int index_backwards = temp_processes_indices_exiting_waiting_queue.size() - 1 - i;
+
+            // Find index to erase based on index of index. (a bit confusing, but this is actually grabbing the index we need to erase from the wait_queue)
+            int index_to_erase = temp_processes_indices_exiting_waiting_queue[index_backwards];
+
+            wait_queue.erase(wait_queue.begin() + index_to_erase);
         }
 
         bool should_run_new_process = false;
@@ -164,6 +178,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
         current_time ++;
         max_iters --;
+        temp_processes_indices_exiting_waiting_queue.clear();
     }
     
     //Close the output table
